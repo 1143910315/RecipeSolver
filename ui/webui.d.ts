@@ -7,6 +7,12 @@ declare global {
       decode: (base64: string) => string;
       setLogging: (enabled: boolean) => void;
     };
+    safeWebui: {
+      call: (eventName: string, ...restArgs: unknown[]) => Promise<string>;
+      encode: (str: string) => string;
+      decode: (base64: string) => string;
+      setLogging: (enabled: boolean) => void;
+    };
   }
 }
 

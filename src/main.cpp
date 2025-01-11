@@ -5,7 +5,9 @@
 #include <chrono>
 #include <date/date.h>
 #include <format>
+#include <fstream>
 #include <iostream>
+#include <nlohmann/json.hpp>
 #include <sstream>
 #include <string>
 
@@ -62,30 +64,95 @@ std::function<void()> timeSend = []() {
             pool.addDelayTask(std::chrono::seconds(1), timeSend);
         }
     };
+nlohmann::json recipeJson = nlohmann::json::array();
+nlohmann::json targetItemJson = nlohmann::json::array();
+std::function<void()> saveData = []() {
+        std::ofstream outfile("data.json");
+        if (outfile) {
+            nlohmann::json json = { { "recipe", recipeJson }, { "targetItem", targetItemJson } };
+            outfile << json.dump();
+        }
+    };
 int main() {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
 #endif
     webui::set_default_root_folder("dist");
 
-    myWindow.bind("", [](webui::window::event *e) {
-        if (e->event_type == WEBUI_EVENT_CONNECTED) {
-            pool.addDelayTask(std::chrono::seconds(1), timeSend);
-            std::cout << "Connected." << std::endl;
-        } else if (e->event_type == WEBUI_EVENT_DISCONNECTED) {
-            running = false;
-            std::cout << "Disconnected." << std::endl;
-        } else if (e->event_type == WEBUI_EVENT_MOUSE_CLICK) {
-            std::cout << "Click." << std::endl;
-        } else if (e->event_type == WEBUI_EVENT_NAVIGATION) {
-            std::cout << "Starting navigation to: " << e->get_string_view() << std::endl;
+    // myWindow.bind("", [](webui::window::event *e) {
+    //     if (e->event_type == WEBUI_EVENT_CONNECTED) {
+    //         pool.addDelayTask(std::chrono::seconds(1), timeSend);
+    //         std::cout << "Connected." << std::endl;
+    //     } else if (e->event_type == WEBUI_EVENT_DISCONNECTED) {
+    //         running = false;
+    //         std::cout << "Disconnected." << std::endl;
+    //     } else if (e->event_type == WEBUI_EVENT_MOUSE_CLICK) {
+    //         std::cout << "Click." << std::endl;
+    //     } else if (e->event_type == WEBUI_EVENT_NAVIGATION) {
+    //         std::cout << "Starting navigation to: " << e->get_string_view() << std::endl;
+    //     }
+    // });
+    std::ifstream f("data.json");
+    if (f.is_open()) {
+        nlohmann::json parseJson = nlohmann::json::parse(f);
+        if (parseJson.contains("recipe")) {
+            auto& recipeList = parseJson["recipe"];
+            if (recipeList.is_array()) {
+                for (auto& recipe : recipeList) {
+                    nlohmann::json ingredientJson = nlohmann::json::array();
+                    if (recipe["ingredients"].is_array()) {
+                        for (auto& ingredient : recipe["ingredients"]) {
+                            ingredientJson.emplace_back(nlohmann::json{ { "id", ingredient["id"].get_ref<const std::string&>() }, { "count", ingredient["count"].get_ref<int64_t&>() } });
+                        }
+                    }
+                    recipeJson.emplace_back(nlohmann::json{ { "id", recipe["id"].get_ref<const std::string&>() }, { "count", recipe["count"].get_ref<int64_t&>() }, { "ingredients", ingredientJson } });
+                }
+            }
+            auto& targetItem = parseJson["targetItem"];
+            if (targetItem.is_array()) {
+                for (auto& e : targetItem) {
+                    targetItemJson.emplace_back(e.get_ref<const std::string&>());
+                }
+            }
         }
+    }
+    myWindow.bind("getRecipeData", [](webui::window::event *e) {
+        e->return_string(recipeJson.dump());
     });
-    myWindow.bind("clickCount", [](webui::window::event *e) {
-        count++;
-        std::cout << e->get_string_view(0) << std::endl;
-        e->return_string(std::format("{}", count));
+    myWindow.bind("getTargetItemData", [](webui::window::event *e) {
+        e->return_string(targetItemJson.dump());
     });
+    myWindow.bind("addTargetItem", [](webui::window::event *e) {
+        auto exist = false;
+        auto name = e->get_string_view(0);
+        for (auto& json : targetItemJson) {
+            if (json.get_ref<const std::string&>() == name) {
+                exist = true;
+                break;
+            }
+        }
+        if (!exist) {
+            targetItemJson.emplace_back(e->get_string_view(0));
+        }
+        e->return_string(targetItemJson.dump());
+        saveData();
+    });
+    myWindow.bind("addRecipe", [](webui::window::event *e) {
+        recipeJson.emplace_back(nlohmann::json::parse(e->get_string_view(0)));
+        e->return_string(recipeJson.dump());
+        saveData();
+    });
+    myWindow.bind("updateRecipe", [](webui::window::event *e) {
+        recipeJson[e->get_int(0)] = (nlohmann::json::parse(e->get_string_view(1)));
+        e->return_string(recipeJson.dump());
+        saveData();
+    });
+#ifdef _WIN32
+    // 获取主屏幕的宽度和高度
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);  // 屏幕宽度
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN); // 屏幕高度
+    myWindow.set_size(screenWidth * 5 / 6, screenHeight * 5 / 6);
+#endif
     myWindow.show("index.html");
     webui::wait();
     return 0;

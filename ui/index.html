@@ -1,19 +1,62 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="">
   <head>
-    <meta charset="UTF-8">
-    <link rel="icon" href="/favicon.ico">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      window.safeWebui = {
+        log: null,
+        async call() {
+          if (window.webui !== undefined) {
+            if (this.log != undefined) {
+              window.webui.setLogging(this.log)
+            }
+            window.safeWebui = window.webui
+            return window.webui.call(...arguments)
+          } else {
+            return Promise.reject(new SyntaxError('初始化未完成'))
+          }
+        },
+        encode() {
+          if (window.webui !== undefined) {
+            if (this.log != undefined) {
+              window.webui.setLogging(this.log)
+            }
+            window.safeWebui = window.webui
+          }
+          return btoa(data)
+        },
+        decode() {
+          if (window.webui !== undefined) {
+            if (this.log != undefined) {
+              window.webui.setLogging(this.log)
+            }
+            window.safeWebui = window.webui
+          }
+          return atob(data)
+        },
+        setLogging(status) {
+          if (window.webui !== undefined) {
+            window.webui.setLogging(status)
+            window.safeWebui = window.webui
+          } else {
+            this.log = status
+          }
+        },
+      }
+    </script>
     <script src="/webui.js"></script>
     <style>
-        a, img {
-            -webkit-user-drag: none;
-        }
+      a,
+      img {
+        -webkit-user-drag: none;
+      }
     </style>
     <title>Vite App</title>
   </head>
-  <body>
-    <div id="app"></div>
+  <body class="fcl">
+    <div id="app" class="fcl fg"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
