@@ -420,6 +420,8 @@ const onSubmit = () => {
       .then((response) => {
         parseRecipeData(response)
         refreshRecipeSelect(newSelectIndex)
+        changeCraftedMethodIndex(form.recipe, newSelectIndex)
+        refreshTreeData()
         ElMessage({
           message: '添加成功！',
           type: 'success',
@@ -443,6 +445,8 @@ const onSubmit = () => {
       .then((response) => {
         parseRecipeData(response)
         refreshRecipeSelect(oldSelectIndex)
+        changeCraftedMethodIndex(form.recipe, oldSelectIndex)
+        refreshTreeData()
         ElMessage({
           message: '修改成功！',
           type: 'success',
