@@ -576,7 +576,7 @@ const prepareChange = (value: string[], direction: 'left' | 'right', movedKeys: 
             <el-input
               v-model="optionName"
               class="option-input"
-              placeholder="input option name"
+              placeholder="输入物品名称"
               size="small"
             />
             <div class="s1"></div>
@@ -644,20 +644,22 @@ const prepareChange = (value: string[], direction: 'left' | 'right', movedKeys: 
           </el-form-item>
           <el-form-item label="所需材料">
             <div class="fcl">
-              <div class="fcl" v-for="(item, index) in form.ingredient" :key="index">
-                <div class="fl">
-                  <el-input-number v-model="item.count" :min="1" placeholder="数量" />
+              <TransitionGroup name="list" tag="ul" class="fcl group">
+                <li class="fcl" v-for="(item, index) in form.ingredient" :key="index">
+                  <div class="fl">
+                    <el-input-number v-model="item.count" :min="1" placeholder="数量" />
+                    <div class="s1"></div>
+                    <el-text class="mx-1">个</el-text>
+                    <div class="s1"></div>
+                    <el-input v-model="item.id" placeholder="原料名称" />
+                    <div class="s1"></div>
+                    <el-icon @click="form.ingredient.splice(index, 1)" :size="20" color="#f56c6c">
+                      <Remove />
+                    </el-icon>
+                  </div>
                   <div class="s1"></div>
-                  <el-text class="mx-1">个</el-text>
-                  <div class="s1"></div>
-                  <el-input v-model="item.id" placeholder="原料名称" />
-                  <div class="s1"></div>
-                  <el-icon @click="form.ingredient.splice(index, 1)" :size="20" color="#f56c6c">
-                    <Remove />
-                  </el-icon>
-                </div>
-                <div class="s1"></div>
-              </div>
+                </li>
+              </TransitionGroup>
               <el-tooltip class="box-item" effect="dark" content="追加材料" placement="top">
                 <el-icon
                   @click="form.ingredient.push({ id: '', count: 1 })"
@@ -706,29 +708,58 @@ const prepareChange = (value: string[], direction: 'left' | 'right', movedKeys: 
 .prepare {
   height: 0;
 }
+
 .prepare > :deep(.el-transfer-panel) {
   display: flex;
   flex-direction: column;
   align-self: normal;
 }
+
 .prepare > :deep(.el-transfer-panel > .el-transfer-panel__body) {
   flex-grow: 1;
 }
+
 .prepare > :deep(.el-transfer__buttons) {
   display: flex;
   flex-direction: column;
 }
+
 .prepare > :deep(.el-transfer__buttons > .el-transfer__button:nth-child(1)) {
   order: 0;
 }
+
 .prepare > :deep(.el-transfer__buttons::after) {
   content: '';
   display: block;
   height: 3vh;
   order: 1;
 }
+
 .prepare > :deep(.el-transfer__buttons > .el-transfer__button:nth-child(2)) {
   margin: 0;
   order: 2;
+}
+
+.group {
+  overflow: hidden;
+}
+
+.list-move,
+/* 对移动中的元素应用的过渡 */
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.5s ease;
+}
+
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+/* 确保将离开的元素从布局流中删除
+  以便能够正确地计算移动的动画。 */
+.list-leave-active {
+  position: absolute;
 }
 </style>
